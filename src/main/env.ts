@@ -23,7 +23,8 @@ const demo = isDev && process.env['AGENTVILLE_DEMO'] === '1'
 
 export const devFlags = {
   demo,
-  mock: demo || (isDev && process.env['AGENTVILLE_MOCK'] === '1'),
+  // Demo implies mock unless AGENTVILLE_MOCK=0 asks for real agents in the demo town.
+  mock: isDev && (process.env['AGENTVILLE_MOCK'] === '1' || (demo && process.env['AGENTVILLE_MOCK'] !== '0')),
   capturePath: isDev ? process.env['AGENTVILLE_CAPTURE'] : undefined,
   captureDelayMs: Number(process.env['AGENTVILLE_CAPTURE_DELAY'] ?? 3500),
   captureQuit: isDev && process.env['AGENTVILLE_CAPTURE_QUIT'] === '1',

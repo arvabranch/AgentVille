@@ -6,6 +6,8 @@ import { GameCanvas } from './game/GameCanvas'
 import { useAppStore } from './state/store'
 import { Hud } from './ui/Hud'
 import { NewAgentDialog } from './ui/NewAgentDialog'
+import { Onboarding } from './ui/Onboarding'
+import { SettingsDialog } from './ui/SettingsDialog'
 import { Toasts } from './ui/Toasts'
 
 function useBootstrap(): boolean {
@@ -13,25 +15,34 @@ function useBootstrap(): boolean {
 
   useEffect(() => {
     const store = useAppStore.getState()
-    const offAgents = api.on('agents:changed', (agents) => useAppStore.getState().setAgents(agents))
+    const offs = [
+      api.on('agents:changed', (agents) => useAppStore.getState().setAgents(agents)),
+      api.on('chat:event', (event) => useAppStore.getState().applyChatEvent(event)),
+      api.on('key:changed', (status) => useAppStore.getState().setKeyStatus(status))
+    ]
 
-    void Promise.all([api.invoke('app:getInfo'), api.invoke('agents:list'), api.invoke('world:getPlayer')]).then(
-      ([info, agents, player]) => {
-        store.setInfo(info)
-        store.setAgents(agents)
-        gameBridge.initialPlayer = player
-        gameBridge.onPlayerMoved = (next) => void api.invoke('world:savePlayer', next)
-        if (info.scenario === 'chat') {
-          const target = agents.find((agent) => agent.status === 'attention') ?? agents[0]
-          if (target) store.openChat(target.id)
-        }
-        setReady(true)
+    void Promise.all([
+      api.invoke('app:getInfo'),
+      api.invoke('agents:list'),
+      api.invoke('world:getPlayer'),
+      api.invoke('key:status'),
+      api.invoke('settings:get')
+    ]).then(([info, agents, player, keyStatus, settings]) => {
+      store.setInfo(info)
+      store.setAgents(agents)
+      store.setKeyStatus(keyStatus)
+      store.setSettings(settings)
+      gameBridge.initialPlayer = player
+      gameBridge.onPlayerMoved = (next) => void api.invoke('world:savePlayer', next)
+      if (info.scenario === 'chat') {
+        const target = agents.find((agent) => agent.status === 'sleeping' && !agent.unread) ?? agents[0]
+        if (target) store.openChat(target.id)
       }
-    )
+      if (info.scenario === 'settings') store.openModal('settings')
+      setReady(true)
+    })
 
-    return () => {
-      offAgents()
-    }
+    return () => offs.forEach((off) => off())
   }, [])
 
   return ready
@@ -40,7 +51,14 @@ function useBootstrap(): boolean {
 export function App(): React.JSX.Element {
   const ready = useBootstrap()
   const modal = useAppStore((s) => s.modal)
+  const info = useAppStore((s) => s.info)
+  const keyStatus = useAppStore((s) => s.keyStatus)
   const openAgent = useAppStore((s) => s.agents.find((agent) => agent.id === s.openAgentId) ?? null)
+  const needsOnboarding = ready && !info?.mockMode && keyStatus !== null && !keyStatus.hasKey
+
+  useEffect(() => {
+    useAppStore.setState({ onboarding: needsOnboarding })
+  }, [needsOnboarding])
 
   return (
     <div className="app">
@@ -48,6 +66,8 @@ export function App(): React.JSX.Element {
       <Hud />
       {openAgent && <ChatPanel key={openAgent.id} agent={openAgent} />}
       {modal === 'newAgent' && <NewAgentDialog />}
+      {modal === 'settings' && <SettingsDialog />}
+      {needsOnboarding && modal === null && <Onboarding />}
       <Toasts />
     </div>
   )

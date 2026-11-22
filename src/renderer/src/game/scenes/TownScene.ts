@@ -161,7 +161,7 @@ export class TownScene extends Phaser.Scene {
 
   override update(): void {
     const state = useAppStore.getState()
-    const blocked = state.modal !== null || isTypingInUi()
+    const blocked = state.modal !== null || state.onboarding || isTypingInUi()
     const k = this.keys
     const interact = Phaser.Input.Keyboard.JustDown(k.e)
 

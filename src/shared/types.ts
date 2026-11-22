@@ -157,10 +157,38 @@ export type ChatItem =
       answers?: Record<string, string>
     })
   | (ChatItemBase & { kind: 'result'; usage: ChatUsage; isError: boolean })
-  | (ChatItemBase & { kind: 'error'; text: string })
-  | (ChatItemBase & { kind: 'notice'; text: string; tone?: 'info' | 'warning' })
+  | (ChatItemBase & { kind: 'error'; text: string; code?: ChatErrorCode })
+  | (ChatItemBase & { kind: 'notice'; code: NoticeCode; detail?: string })
 
 export type ChatItemKind = ChatItem['kind']
+
+/** Short system notes in the timeline; the renderer translates the code. */
+export type NoticeCode = 'stopped' | 'resumed' | 'resumeFailed' | 'compacted' | 'retrying' | 'permissionUnavailable'
+
+/**
+ * Error categories. Most come straight from the Agent SDK; the rest are
+ * AgentVille's own (no key, blocked credentials, crashed process).
+ */
+export type ChatErrorCode =
+  | 'authentication_failed'
+  | 'billing_error'
+  | 'rate_limit'
+  | 'overloaded'
+  | 'invalid_request'
+  | 'model_not_found'
+  | 'server_error'
+  | 'max_output_tokens'
+  | 'unknown'
+  | 'noKey'
+  | 'subscriptionBlocked'
+  | 'crash'
+
+/** A chat item before the main process stamps its id and timestamp. */
+export type NewChatItem = ChatItem extends infer Item
+  ? Item extends ChatItem
+    ? Omit<Item, 'id' | 'ts'> & { id?: string }
+    : never
+  : never
 
 export type PermissionResponse =
   | { requestId: string; decision: 'allow' | 'allowAlways' | 'deny'; message?: string }

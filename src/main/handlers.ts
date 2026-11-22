@@ -1,11 +1,16 @@
 import { app, type BrowserWindow, clipboard, dialog, shell } from 'electron'
 import { z } from 'zod'
-import { MAX_AGENT_NAME } from '@shared/constants'
+import { MAX_AGENT_NAME, MAX_MESSAGE_CHARS } from '@shared/constants'
 import type { ExternalTarget, PlayerState } from '@shared/types'
 import type { AgentManager } from './agents/AgentManager'
+import type { SessionManager } from './agents/SessionManager'
+import type { ChatLog } from './chat/ChatLog'
 import { devFlags } from './env'
-import { handle } from './ipc'
+import { emit, handle } from './ipc'
+import { log } from './log'
+import type { KeyStore } from './secrets'
 import { openExternalSafe } from './security'
+import type { Settings } from './settings'
 
 /** Fixed pages of the Anthropic Console (billing and usage live there). */
 export const EXTERNAL_URLS: Record<ExternalTarget, string> = {
@@ -18,6 +23,12 @@ export const EXTERNAL_URLS: Record<ExternalTarget, string> = {
 
 const externalTarget = z.enum(['console', 'billing', 'usage', 'apiKeys', 'repo'])
 const agentId = z.string().uuid()
+const requestId = z.string().min(1).max(200)
+const permissionResponse = z.union([
+  z.object({ requestId, decision: z.enum(['allow', 'allowAlways', 'deny']), message: z.string().max(2000).optional() }),
+  z.object({ requestId, decision: z.literal('answer'), answers: z.record(z.string().max(1000), z.string().max(5000)) }),
+  z.object({ requestId, decision: z.literal('dismiss') })
+])
 
 export interface WorldState {
   getPlayer: () => PlayerState | null
@@ -26,6 +37,10 @@ export interface WorldState {
 
 export interface HandlerContext {
   agents: AgentManager
+  sessions: SessionManager
+  chat: ChatLog
+  keys: KeyStore
+  settings: Settings
   world: WorldState
   getWindow: () => BrowserWindow | null
 }
@@ -60,6 +75,35 @@ export function registerIpcHandlers(ctx: HandlerContext): void {
       void shell.openPath(folder)
     }
   })
+
+  /* ------------------------------------------------------------- key -- */
+  handle('key:status', z.tuple([]), () => ctx.keys.status())
+
+  handle('key:save', z.tuple([z.string().max(400)]), async (key) => {
+    const result = await ctx.keys.save(key)
+    if (result.ok) {
+      // Running agents still hold the old key in their environment.
+      await ctx.sessions.closeAll()
+      emit('key:changed', result.status)
+    }
+    return result
+  })
+
+  handle('key:clear', z.tuple([]), async () => {
+    await ctx.sessions.closeAll()
+    const status = await ctx.keys.clear()
+    emit('key:changed', status)
+    return status
+  })
+
+  /* -------------------------------------------------------- settings -- */
+  handle('settings:get', z.tuple([]), () => ctx.settings.view())
+
+  handle('settings:setLanguage', z.tuple([z.enum(['system', 'en', 'es'])]), (language) =>
+    ctx.settings.setLanguage(language)
+  )
+
+  handle('usage:totals', z.tuple([]), () => ctx.agents.totals())
 
   /* ----------------------------------------------------------- world -- */
   handle('world:getPlayer', z.tuple([]), () => ctx.world.getPlayer())
@@ -96,11 +140,26 @@ export function registerIpcHandlers(ctx: HandlerContext): void {
     (input) => ctx.agents.create(input)
   )
 
-  handle('agents:remove', z.tuple([agentId]), (id) => {
+  handle('agents:remove', z.tuple([agentId]), async (id) => {
+    await ctx.sessions.forget(id)
+    ctx.chat.clear(id)
     ctx.agents.remove(id)
   })
 
   handle('agents:markRead', z.tuple([agentId]), (id) => {
     if (ctx.agents.has(id) && ctx.agents.get(id).unread) ctx.agents.update(id, { unread: false })
+  })
+
+  /* ------------------------------------------------------------ chat -- */
+  handle('chat:history', z.tuple([agentId]), (id) => ctx.chat.get(id))
+
+  handle('chat:send', z.tuple([agentId, z.string().min(1).max(MAX_MESSAGE_CHARS)]), (id, text) => {
+    ctx.sessions.send(id, text).catch((error: unknown) => log.error('Could not send message', error))
+  })
+
+  handle('chat:stop', z.tuple([agentId]), (id) => ctx.sessions.stop(id))
+
+  handle('chat:respondPermission', z.tuple([agentId, permissionResponse]), (id, response) => {
+    ctx.sessions.respond(id, response)
   })
 }

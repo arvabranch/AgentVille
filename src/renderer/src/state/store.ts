@@ -27,6 +27,8 @@ interface AppState {
   openAgentId: string | null
   nearAgentId: string | null
   modal: Modal
+  /** The first-run key screen is showing: the game ignores input. */
+  onboarding: boolean
   toasts: Toast[]
 
   setInfo: (info: AppInfo) => void
@@ -64,6 +66,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
   openAgentId: null,
   nearAgentId: null,
   modal: null,
+  onboarding: false,
   toasts: [],
 
   setInfo: (info) => set({ info }),
