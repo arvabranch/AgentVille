@@ -74,6 +74,7 @@ export const es = {
   'error.maxTokens': 'La respuesta se cortó por longitud.',
   'error.noKey': 'No hay ninguna API key guardada. Añádela en Ajustes.',
   'error.subscription': 'AgentVille solo funciona con una API key de Anthropic, no con credenciales de suscripción.',
+  'error.folderMissing': 'La carpeta del proyecto ya no existe. Elimina este agente y crea uno nuevo.',
   'error.crash': 'El proceso del agente se detuvo de forma inesperada. Vuelve a enviar el mensaje para reiniciarlo.',
 
   'perm.title': '{name} quiere usar una herramienta',

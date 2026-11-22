@@ -30,6 +30,8 @@ export const devFlags = {
   captureQuit: isDev && process.env['AGENTVILLE_CAPTURE_QUIT'] === '1',
   /** Optional UI scenario applied before capturing (demo mode only). */
   scenario: isDev ? process.env['AGENTVILLE_SCENARIO'] : undefined,
+  /** Keep the demo town's data between runs (to test persistence). */
+  keepData: isDev && process.env['AGENTVILLE_KEEP_DATA'] === '1',
   /** Optional input script run before capturing (see devScript.ts). */
   script: isDev ? process.env['AGENTVILLE_SCRIPT'] : undefined
 } as const

@@ -181,6 +181,7 @@ export type ChatErrorCode =
   | 'unknown'
   | 'noKey'
   | 'subscriptionBlocked'
+  | 'folderMissing'
   | 'crash'
 
 /** A chat item before the main process stamps its id and timestamp. */

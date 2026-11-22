@@ -1,4 +1,4 @@
-import { app, type BrowserWindow, Notification } from 'electron'
+import { type BrowserWindow, Notification } from 'electron'
 import type { AgentStatus } from '@shared/types'
 import type { AgentManager } from './agents/AgentManager'
 import { emit } from './ipc'
@@ -36,8 +36,7 @@ export function watchAgentsForNotifications(
     const win = getWindow()
     const quiet = !win || win.isDestroyed() || win.isFocused() || !Notification.isSupported()
     if (!quiet) {
-      const setting = settings.raw.language
-      const language = setting === 'system' ? (app.getLocale().startsWith('es') ? 'es' : 'en') : setting
+      const language = settings.resolvedLanguage()
       for (const agent of agents.list()) {
         const before = previous.get(agent.id)
         if (!before) continue

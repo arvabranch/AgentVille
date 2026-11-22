@@ -36,11 +36,16 @@ function useBootstrap(): boolean {
       store.setSettings(settings)
       gameBridge.initialPlayer = player
       gameBridge.onPlayerMoved = (next) => void api.invoke('world:savePlayer', next)
-      if (info.scenario === 'chat') {
-        const target = agents.find((agent) => agent.status === 'sleeping' && !agent.unread) ?? agents[0]
+      // Dev-only screenshot scenarios, e.g. "chat" or "chat:Hedy".
+      const [scenario, scenarioAgent] = (info.scenario ?? '').split(':')
+      if (scenario === 'chat') {
+        const target =
+          agents.find((agent) => agent.name === scenarioAgent) ??
+          agents.find((agent) => agent.status === 'sleeping' && !agent.unread) ??
+          agents[0]
         if (target) store.openChat(target.id)
       }
-      if (info.scenario === 'settings') store.openModal('settings')
+      if (scenario === 'settings') store.openModal('settings')
       setReady(true)
     })
 

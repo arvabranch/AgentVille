@@ -30,6 +30,11 @@ export function ChatPanel({ agent }: { agent: AgentView }): React.JSX.Element {
     closeChat()
   }
 
+  const exportChat = async (): Promise<void> => {
+    const file = await api.invoke('chat:export', agent.id)
+    if (file) toast(t('chat.exported', { path: file }), 'success')
+  }
+
   const removeRule = (rule: string): void => {
     void api.invoke(
       'agents:setAllowRules',
@@ -88,6 +93,15 @@ export function ChatPanel({ agent }: { agent: AgentView }): React.JSX.Element {
           )}
         </div>
         <div className="chat-tools">
+          <button
+            className="btn btn-icon btn-ghost"
+            onClick={() => void exportChat()}
+            title={t('chat.export')}
+            aria-label={t('chat.export')}
+            disabled={items.length === 0}
+          >
+            <Icon name="download" />
+          </button>
           <button
             className={`btn btn-icon btn-ghost${drawer === 'rules' ? ' active' : ''}`}
             onClick={() => toggle('rules')}

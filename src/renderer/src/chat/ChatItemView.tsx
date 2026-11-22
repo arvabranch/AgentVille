@@ -25,6 +25,7 @@ const ERROR_KEYS: Partial<Record<ChatErrorCode, MessageKey>> = {
   max_output_tokens: 'error.maxTokens',
   noKey: 'error.noKey',
   subscriptionBlocked: 'error.subscription',
+  folderMissing: 'error.folderMissing',
   crash: 'error.crash'
 }
 

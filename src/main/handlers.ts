@@ -1,10 +1,13 @@
 import { app, type BrowserWindow, clipboard, dialog, shell } from 'electron'
+import { writeFile } from 'node:fs/promises'
+import path from 'node:path'
 import { z } from 'zod'
 import { MAX_AGENT_NAME, MAX_MESSAGE_CHARS } from '@shared/constants'
 import type { ExternalTarget, PlayerState } from '@shared/types'
 import type { AgentManager } from './agents/AgentManager'
 import type { SessionManager } from './agents/SessionManager'
 import type { ChatLog } from './chat/ChatLog'
+import { chatToMarkdown, exportFileName } from './chat/exportMarkdown'
 import { devFlags } from './env'
 import { emit, handle } from './ipc'
 import { log } from './log'
@@ -43,6 +46,7 @@ export interface HandlerContext {
   settings: Settings
   world: WorldState
   getWindow: () => BrowserWindow | null
+  forgetHistory: (agentId: string) => Promise<void>
 }
 
 export function registerIpcHandlers(ctx: HandlerContext): void {
@@ -144,6 +148,7 @@ export function registerIpcHandlers(ctx: HandlerContext): void {
     await ctx.sessions.forget(id)
     ctx.chat.clear(id)
     ctx.agents.remove(id)
+    await ctx.forgetHistory(id)
   })
 
   handle('agents:setAllowRules', z.tuple([agentId, z.array(z.string().min(1).max(2000)).max(200)]), async (id, rules) => {
@@ -168,5 +173,21 @@ export function registerIpcHandlers(ctx: HandlerContext): void {
 
   handle('chat:respondPermission', z.tuple([agentId, permissionResponse]), (id, response) => {
     ctx.sessions.respond(id, response)
+  })
+
+  handle('chat:export', z.tuple([agentId]), async (id) => {
+    if (!ctx.agents.has(id)) return null
+    const agent = ctx.agents.list().find((a) => a.id === id)
+    if (!agent) return null
+    const win = ctx.getWindow()
+    const options: Electron.SaveDialogOptions = {
+      defaultPath: path.join(app.getPath('downloads'), exportFileName(agent)),
+      filters: [{ name: 'Markdown', extensions: ['md'] }]
+    }
+    const result = win ? await dialog.showSaveDialog(win, options) : await dialog.showSaveDialog(options)
+    if (result.canceled || !result.filePath) return null
+    const language = ctx.settings.resolvedLanguage()
+    await writeFile(result.filePath, chatToMarkdown(agent, ctx.chat.get(id), language), 'utf8')
+    return result.filePath
   })
 }

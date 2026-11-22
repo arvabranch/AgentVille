@@ -76,6 +76,7 @@ export const en: Messages = {
   'error.maxTokens': 'The reply was cut off for length.',
   'error.noKey': 'No API key saved. Add one in Settings.',
   'error.subscription': 'AgentVille only works with an Anthropic API key, not with subscription credentials.',
+  'error.folderMissing': 'The project folder no longer exists. Remove this agent and create a new one.',
   'error.crash': 'The agent process stopped unexpectedly. Send your message again to restart it.',
 
   'perm.title': '{name} wants to use a tool',

@@ -10,6 +10,7 @@ import {
   type SDKSystemMessage,
   type SDKUserMessage
 } from '@anthropic-ai/claude-agent-sdk'
+import { existsSync } from 'node:fs'
 import type { ChatErrorCode, ChatItem, ChatUsage, PermissionResponse } from '@shared/types'
 import { log, redact } from '../log'
 import type { KeyStore } from '../secrets'
@@ -59,6 +60,7 @@ export class SdkSession implements AgentSession {
   private interrupting = false
   private closing = false
   private sawInit = false
+  private announcedResume = false
   private resumedFrom: string | null = null
   private lastPrompt: string | null = null
   private processCost: number | null = null
@@ -146,6 +148,12 @@ export class SdkSession implements AgentSession {
     }
 
     const agent = this.ctx.agent
+    if (!existsSync(agent.folder)) {
+      this.turnActive = false
+      this.ctx.error(agent.folder, 'folderMissing')
+      this.ctx.status('error', 'Folder not found')
+      return false
+    }
     const generation = ++this.generation
     const input = new MessageQueue<SDKUserMessage>()
     this.input = input
@@ -247,6 +255,11 @@ export class SdkSession implements AgentSession {
       return
     }
     const agent = this.ctx.agent
+    if (this.resumedFrom && !this.announcedResume && message.session_id === this.resumedFrom) {
+      // First time this run that the agent picks up a conversation from disk.
+      this.announcedResume = true
+      this.ctx.notice('resumed')
+    }
     if (message.session_id && message.session_id !== agent.sessionId) {
       this.ctx.setSession(message.session_id)
     }

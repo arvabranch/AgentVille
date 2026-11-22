@@ -1,5 +1,5 @@
 import { app } from 'electron'
-import type { SettingsView } from '@shared/types'
+import type { Language, SettingsView } from '@shared/types'
 
 export interface StoredSettings {
   language: SettingsView['language']
@@ -18,6 +18,12 @@ export class Settings {
 
   get raw(): StoredSettings {
     return { ...this.value }
+  }
+
+  /** The language actually in use (resolves "system"). */
+  resolvedLanguage(): Language {
+    if (this.value.language !== 'system') return this.value.language
+    return app.getLocale().toLowerCase().startsWith('es') ? 'es' : 'en'
   }
 
   view(): SettingsView {
