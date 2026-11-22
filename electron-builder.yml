@@ -1,0 +1,56 @@
+# Packaging config. Build installers with `npm run dist` (or `npm run dist:dir`
+# for an unpacked app). Builds are unsigned unless you configure signing.
+appId: dev.agentville.app
+productName: AgentVille
+copyright: Copyright © 2026 AgentVille contributors
+
+directories:
+  output: release/${version}
+  buildResources: build
+
+files:
+  - out/**
+  - resources/**
+  - package.json
+  - '!**/*.map'
+
+# The Agent SDK runs a native Claude Code binary. Executables cannot run from
+# inside app.asar, so the per-platform binary package stays unpacked.
+asarUnpack:
+  - resources/**
+  - '**/node_modules/@anthropic-ai/claude-agent-sdk-*/**'
+
+electronFuses:
+  runAsNode: false
+  enableCookieEncryption: true
+  enableNodeOptionsEnvironmentVariable: false
+  enableNodeCliInspectArguments: false
+  enableEmbeddedAsarIntegrityValidation: true
+  onlyLoadAppFromAsar: true
+
+mac:
+  category: public.app-category.developer-tools
+  # Ad-hoc signature so local builds run on Apple Silicon. To ship signed and
+  # notarized builds, set your identity here (or pass -c.mac.identity=...).
+  identity: '-'
+  hardenedRuntime: false
+  target:
+    - dmg
+    - zip
+
+win:
+  target:
+    - nsis
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+
+linux:
+  category: Development
+  target:
+    - AppImage
+    - deb
+  maintainer: AgentVille contributors
+
+publish: null

@@ -4,7 +4,7 @@ import path from 'node:path'
 import type { PlayerState } from '@shared/types'
 import { AgentManager } from './agents/AgentManager'
 import { PermissionBroker } from './agents/PermissionBroker'
-import { resolveShellPath } from './agents/runtimeEnv'
+import { claudeExecutablePath, resolveShellPath } from './agents/runtimeEnv'
 import { SessionManager } from './agents/SessionManager'
 import { ChatLog } from './chat/ChatLog'
 import { seedDemoTown } from './demo'
@@ -39,7 +39,7 @@ const chat = new ChatLog()
 const keys = new KeyStore()
 const settings = new Settings()
 const permissions = new PermissionBroker(agents)
-const sessions = new SessionManager({ agents, chat, keys }, permissions)
+const sessions = new SessionManager({ agents, chat, keys }, permissions, () => settings.resolvedLanguage())
 
 const snapshot = (): PersistedState => ({
   version: 1,
@@ -78,6 +78,7 @@ async function loadData(): Promise<void> {
     chat.load(agent.id, settleLoadedHistory(await persistence.loadHistory(agent.id)))
   }
 
+  if (devFlags.language) settings.load({ language: devFlags.language })
   if (devFlags.demo) await seedDemoTown(agents)
   if (devFlags.scenario === 'office' || devFlags.scenario?.startsWith('chat')) player = { x: 22 * 16, y: 15 * 16, facing: 'up' }
 
@@ -123,6 +124,7 @@ app
       }
     })
     openMainWindow()
+    if (app.isPackaged) log.info(`Claude Code binary: ${claudeExecutablePath() ?? 'not found (agents will fail to start)'}`)
     watchAgentsForNotifications(agents, settings, () => mainWindow)
     void resolveShellPath()
 
@@ -139,16 +141,16 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
 })
 
-// Let agent processes exit cleanly (so their sessions are saved) before quitting.
+// Let agent processes exit cleanly (so their sessions are saved), write any
+// pending data, then exit. Electron also routes SIGINT/SIGTERM through here.
 let quitting = false
 app.on('before-quit', (event) => {
   if (quitting) return
   quitting = true
   event.preventDefault()
   const timeout = new Promise((resolve) => setTimeout(resolve, 4000))
-  void Promise.race([sessions.closeAll(), timeout]).finally(() => app.quit())
-})
-
-app.on('will-quit', () => {
-  persistence?.flushSync()
+  void Promise.race([sessions.closeAll(), timeout]).finally(() => {
+    persistence?.flushSync()
+    app.exit(0)
+  })
 })

@@ -1,4 +1,4 @@
-import type { ChatItem, PermissionResponse } from '@shared/types'
+import type { ChatItem, Language, PermissionResponse } from '@shared/types'
 import type { AgentContext } from './AgentContext'
 import type { PermissionHandler } from './SdkSession'
 import { summarizeTool } from './toolSummary'
@@ -15,11 +15,14 @@ const sleep = (ms: number, signal: AbortSignal): Promise<void> =>
     })
   })
 
-const reply = (name: string, prompt: string): string => `¡Hola! Soy **${name}** y esto es una respuesta *simulada* (modo de desarrollo, sin llamadas a la API).
+const quote = (prompt: string): string => prompt.split('\n')[0]?.slice(0, 140) ?? ''
+
+const REPLIES: Record<Language, (name: string, prompt: string) => string> = {
+  es: (name, prompt) => `¡Hola! Soy **${name}** y esto es una respuesta *simulada* (modo de desarrollo, sin llamadas a la API).
 
 Esto es lo que entendí de tu mensaje:
 
-> ${prompt.split('\n')[0]?.slice(0, 140) ?? ''}
+> ${quote(prompt)}
 
 Un ejemplo de bloque de código con resaltado:
 
@@ -34,7 +37,28 @@ export function greet(name: string): string {
 | Leer el proyecto | ✅ |
 | Ejecutar pruebas | ⏳ |
 
-Escribe un mensaje con la palabra **test** para que pida permiso antes de ejecutar un comando, o con **pregunta** para que te haga preguntas.`
+Escribe un mensaje con la palabra **test** para que pida permiso antes de ejecutar un comando, o con **pregunta** para que te haga preguntas.`,
+  en: (name, prompt) => `Hi! I'm **${name}** and this is a *simulated* reply (development mode, no API calls).
+
+Here is what I understood:
+
+> ${quote(prompt)}
+
+A code block with syntax highlighting:
+
+\`\`\`ts
+export function greet(name: string): string {
+  return \`Hello, \${name} 👋\`
+}
+\`\`\`
+
+| Step | Status |
+| --- | --- |
+| Read the project | ✅ |
+| Run the tests | ⏳ |
+
+Send a message with the word **test** to get a permission prompt before a command runs, or **question** to get asked something.`
+}
 
 /**
  * Dev-only stand-in for the Agent SDK: streams a canned Markdown reply, shows
@@ -51,7 +75,8 @@ export class MockSession implements AgentSession {
       request: PermissionHandler
       respond: (agentId: string, response: PermissionResponse) => void
       cancel: (agentId: string) => void
-    }
+    },
+    private readonly language: () => Language
   ) {}
 
   get busy(): boolean {
@@ -66,12 +91,13 @@ export class MockSession implements AgentSession {
     const turn = ++this.turn
     const started = Date.now()
     try {
+      const es = this.language() === 'es'
       await sleep(500, abort.signal)
       await this.tool('Read', { file_path: `${this.ctx.agent.folder}/package.json` }, abort.signal)
 
       if (/\btest/i.test(text)) {
         const command = 'npm test'
-        const decision = await this.permissions.request(this.ctx, 'Bash', { command, description: 'Run the test suite' }, {
+        const decision = await this.permissions.request(this.ctx, 'Bash', { command, description: es ? 'Ejecuta las pruebas del proyecto' : 'Run the test suite' }, {
           signal: abort.signal,
           suggestions: [
             { type: 'addRules', rules: [{ toolName: 'Bash', ruleContent: 'npm test:*' }], behavior: 'allow', destination: 'localSettings' }
@@ -94,21 +120,21 @@ export class MockSession implements AgentSession {
           {
             questions: [
               {
-                question: '¿Qué framework de pruebas prefieres?',
-                header: 'Pruebas',
+                question: es ? '¿Qué framework de pruebas prefieres?' : 'Which test framework do you prefer?',
+                header: es ? 'Pruebas' : 'Tests',
                 multiSelect: false,
                 options: [
-                  { label: 'Vitest', description: 'Rápido y compatible con Vite' },
-                  { label: 'Jest', description: 'El clásico' }
+                  { label: 'Vitest', description: es ? 'Rápido y compatible con Vite' : 'Fast and Vite-friendly' },
+                  { label: 'Jest', description: es ? 'El clásico' : 'The classic' }
                 ]
               },
               {
-                question: '¿Qué quieres que cubra primero?',
-                header: 'Alcance',
+                question: es ? '¿Qué quieres que cubra primero?' : 'What should I cover first?',
+                header: es ? 'Alcance' : 'Scope',
                 multiSelect: true,
                 options: [
-                  { label: 'Unitarias', description: 'Funciones puras' },
-                  { label: 'Integración', description: 'IPC y almacenamiento' }
+                  { label: es ? 'Unitarias' : 'Unit', description: es ? 'Funciones puras' : 'Pure functions' },
+                  { label: es ? 'Integración' : 'Integration', description: es ? 'IPC y almacenamiento' : 'IPC and storage' }
                 ]
               }
             ]
@@ -121,7 +147,10 @@ export class MockSession implements AgentSession {
 
       const id = `mock-${turn}-reply`
       this.ctx.append({ id, kind: 'assistant', text: '', streaming: true })
-      const body = answers ? `Gracias, anoto tus respuestas:\n\n${answers}\n\n` + reply(this.ctx.agent.name, text) : reply(this.ctx.agent.name, text)
+      const language = this.language()
+      const reply = REPLIES[language](this.ctx.agent.name, text)
+      const thanks = language === 'es' ? 'Gracias, anoto tus respuestas:' : 'Thanks, noting your answers:'
+      const body = answers ? `${thanks}\n\n${answers}\n\n${reply}` : reply
       for (const word of body.split(/(?<=\s)/)) {
         await sleep(12, abort.signal)
         this.ctx.delta(id, word)

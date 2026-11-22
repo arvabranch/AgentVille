@@ -59,7 +59,13 @@ function fence(content: string, lang = ''): string {
 }
 
 const time = (ts: number): string => new Date(ts).toLocaleString()
-const usd = (value: number): string => `$${value < 0.01 ? value.toFixed(4) : value.toFixed(2)}`
+/** Same rounding as the chat UI (more decimals for small amounts). */
+const usd = (value: number): string => {
+  if (value === 0) return '$0.00'
+  if (value < 0.01) return `$${value.toFixed(4)}`
+  if (value < 1) return `$${value.toFixed(3)}`
+  return `$${value.toFixed(2)}`
+}
 
 export function chatToMarkdown(agent: AgentView, items: ChatItem[], language: Language): string {
   const L = LABELS[language]

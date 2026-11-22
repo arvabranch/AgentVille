@@ -18,7 +18,7 @@ export function Hud(): React.JSX.Element {
       <div className="hud-brand">
         <span className="hud-logo" aria-hidden="true" />
         <span className="brand">AgentVille</span>
-        {info?.mockMode && <span className="badge badge-warn">{info.demoMode ? t('hud.demo') : t('hud.mock')}</span>}
+        {info?.mockMode && !info.scenario && <span className="badge badge-warn">{info.demoMode ? t('hud.demo') : t('hud.mock')}</span>}
       </div>
 
       <div className="hud-hint">{agents.length === 0 ? t('world.empty') : t('hud.hint')}</div>

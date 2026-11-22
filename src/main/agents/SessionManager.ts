@@ -1,4 +1,4 @@
-import type { PermissionResponse } from '@shared/types'
+import type { Language, PermissionResponse } from '@shared/types'
 import { devFlags } from '../env'
 import { log } from '../log'
 import { AgentContext, type SessionDeps } from './AgentContext'
@@ -18,7 +18,8 @@ export class SessionManager {
 
   constructor(
     private readonly deps: SessionDeps,
-    private readonly permissions: PermissionGate
+    private readonly permissions: PermissionGate,
+    private readonly language: () => Language = () => 'en'
   ) {}
 
   private session(agentId: string): AgentSession {
@@ -26,7 +27,7 @@ export class SessionManager {
     if (!session) {
       const ctx = new AgentContext(agentId, this.deps)
       session = devFlags.mock
-        ? new MockSession(ctx, this.permissions)
+        ? new MockSession(ctx, this.permissions, this.language)
         : new SdkSession(ctx, this.deps.keys, this.permissions)
       this.sessions.set(agentId, session)
     }

@@ -1,6 +1,7 @@
 import { app, BrowserWindow } from 'electron'
 import { writeFile } from 'node:fs/promises'
 import path from 'node:path'
+import icon from '../../resources/icon.png?asset'
 import { runDevScript } from './devScript'
 import { devFlags, isDev, mainDir, rendererDevUrl } from './env'
 import { log } from './log'
@@ -19,6 +20,8 @@ export function createMainWindow(): BrowserWindow {
     titleBarStyle: isMac ? 'hiddenInset' : 'default',
     trafficLightPosition: isMac ? { x: 16, y: 18 } : undefined,
     autoHideMenuBar: !isMac,
+    // macOS and Windows take the icon from the app bundle / executable.
+    ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: path.join(mainDir, '../preload/index.cjs'),
       contextIsolation: true,
@@ -31,6 +34,9 @@ export function createMainWindow(): BrowserWindow {
   })
 
   win.once('ready-to-show', () => win.show())
+
+  // In development the Dock would show Electron's icon otherwise.
+  if (isDev && isMac) app.dock?.setIcon(icon)
 
   if (isDev) {
     // Surface renderer warnings/errors (CSP violations, exceptions) in the terminal.
