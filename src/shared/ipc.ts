@@ -42,6 +42,7 @@ export interface InvokeMap {
   'agents:create': (input: CreateAgentInput) => AgentView
   'agents:remove': (agentId: string) => void
   'agents:markRead': (agentId: string) => void
+  'agents:setAllowRules': (agentId: string, rules: string[]) => void
 
   'chat:history': (agentId: string) => ChatItem[]
   'chat:send': (agentId: string, text: string) => void
@@ -56,6 +57,8 @@ export interface EventMap {
   'agents:changed': AgentView[]
   'chat:event': ChatEvent
   'key:changed': KeyStatus
+  /** Ask the UI to open an agent's chat (e.g. after clicking a notification). */
+  'ui:openAgent': string
 }
 
 export type InvokeChannel = keyof InvokeMap
@@ -83,6 +86,7 @@ const INVOKE_CHANNEL_RECORD: Record<InvokeChannel, true> = {
   'agents:create': true,
   'agents:remove': true,
   'agents:markRead': true,
+  'agents:setAllowRules': true,
   'chat:history': true,
   'chat:send': true,
   'chat:stop': true,
@@ -94,7 +98,8 @@ const INVOKE_CHANNEL_RECORD: Record<InvokeChannel, true> = {
 const EVENT_CHANNEL_RECORD: Record<EventChannel, true> = {
   'agents:changed': true,
   'chat:event': true,
-  'key:changed': true
+  'key:changed': true,
+  'ui:openAgent': true
 }
 
 export const INVOKE_CHANNELS = Object.keys(INVOKE_CHANNEL_RECORD) as InvokeChannel[]

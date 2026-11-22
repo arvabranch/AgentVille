@@ -146,6 +146,13 @@ export function registerIpcHandlers(ctx: HandlerContext): void {
     ctx.agents.remove(id)
   })
 
+  handle('agents:setAllowRules', z.tuple([agentId, z.array(z.string().min(1).max(2000)).max(200)]), async (id, rules) => {
+    if (!ctx.agents.has(id)) return
+    ctx.agents.update(id, { allowRules: rules })
+    // Rules are applied when the agent process starts: let it fall asleep.
+    if (!ctx.sessions.isBusy(id)) await ctx.sessions.forget(id)
+  })
+
   handle('agents:markRead', z.tuple([agentId]), (id) => {
     if (ctx.agents.has(id) && ctx.agents.get(id).unread) ctx.agents.update(id, { unread: false })
   })

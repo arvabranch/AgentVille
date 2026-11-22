@@ -369,6 +369,7 @@ export class SdkSession implements AgentSession {
   }
 
   private crash(error: unknown): void {
+    this.ctx.endStreaming()
     const text = redact(error instanceof Error ? error.message : String(error))
     log.warn(`Agent ${this.ctx.agent.name} stopped unexpectedly: ${text}`)
     this.closeOpenTools('error')
@@ -386,6 +387,7 @@ export class SdkSession implements AgentSession {
 
   /** Ends a turn without a result from the SDK (forced stop, closed process). */
   private endTurnLocally(): void {
+    this.ctx.endStreaming()
     this.closeOpenTools('error')
     this.turnActive = false
     if (this.interrupting) this.ctx.notice('stopped')

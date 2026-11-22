@@ -13,8 +13,7 @@ const NOTICE_KEYS: Record<NoticeCode, MessageKey> = {
   resumed: 'chat.resumed',
   resumeFailed: 'chat.resumeFailed',
   compacted: 'chat.compacted',
-  retrying: 'chat.retrying',
-  permissionUnavailable: 'chat.permissionUnavailable'
+  retrying: 'chat.retrying'
 }
 
 const ERROR_KEYS: Partial<Record<ChatErrorCode, MessageKey>> = {

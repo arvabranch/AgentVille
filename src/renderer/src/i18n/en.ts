@@ -65,7 +65,6 @@ export const en: Messages = {
   'chat.resumeFailed': 'Could not resume the previous conversation; starting a new one.',
   'chat.compacted': 'The conversation was summarized to free up context.',
   'chat.retrying': 'Retrying the API call…',
-  'chat.permissionUnavailable': '{detail} needed permission; this build cannot ask you yet, so it was denied.',
   'chat.needsKey': 'Add your API key to talk to {name}.',
   'chat.openSettings': 'Open Settings',
 
@@ -94,6 +93,10 @@ export const en: Messages = {
   'perm.fetch': 'Open a web page',
   'perm.generic': 'Use {tool}',
   'perm.reason': 'Reason: {reason}',
+
+  'rules.title': 'Remembered permissions',
+  'rules.empty': 'You have not allowed anything “always” for this agent yet.',
+  'rules.hint': 'These rules only apply to this agent. Removing one takes effect the next time the agent wakes up.',
 
   'question.title': '{name} has a question',
   'question.other': 'Something else…',

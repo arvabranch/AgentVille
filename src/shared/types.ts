@@ -163,7 +163,7 @@ export type ChatItem =
 export type ChatItemKind = ChatItem['kind']
 
 /** Short system notes in the timeline; the renderer translates the code. */
-export type NoticeCode = 'stopped' | 'resumed' | 'resumeFailed' | 'compacted' | 'retrying' | 'permissionUnavailable'
+export type NoticeCode = 'stopped' | 'resumed' | 'resumeFailed' | 'compacted' | 'retrying'
 
 /**
  * Error categories. Most come straight from the Agent SDK; the rest are

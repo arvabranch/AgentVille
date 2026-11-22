@@ -14,7 +14,8 @@ const PATHS = {
   external: 'M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5',
   chevron: 'M9 6l6 6-6 6',
   alert: 'M12 4l9 16H3zM12 10v4M12 17h.01',
-  terminal: 'M4 5h16v14H4zM7 10l3 2-3 2M12 15h5'
+  terminal: 'M4 5h16v14H4zM7 10l3 2-3 2M12 15h5',
+  shield: 'M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z'
 } as const
 
 export type IconName = keyof typeof PATHS

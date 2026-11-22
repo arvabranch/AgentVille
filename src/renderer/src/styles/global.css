@@ -1241,3 +1241,341 @@ select {
     opacity: 1;
   }
 }
+
+/* ---------------------------------------------------- permission cards -- */
+
+.perm-card {
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  border: 1px solid rgba(255, 209, 102, 0.45);
+  background: rgba(255, 209, 102, 0.07);
+  box-shadow: 0 0 0 3px rgba(255, 209, 102, 0.05);
+}
+
+.perm-card:not(.perm-pending):not(.question-pending) {
+  border-color: var(--border);
+  background: rgba(255, 255, 255, 0.03);
+  box-shadow: none;
+}
+
+.perm-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--warn);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.perm-card:not(.perm-pending):not(.question-pending) .perm-head {
+  color: var(--text-faint);
+}
+
+.perm-action {
+  margin: 6px 0 8px;
+  font-weight: 650;
+  font-size: 14px;
+}
+
+.perm-description {
+  margin: 0 0 6px;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.perm-code {
+  margin: 0 0 8px;
+  max-height: 220px;
+  overflow: auto;
+  padding: 9px 11px;
+  border-radius: var(--radius-sm);
+  background: #0d1117;
+  border: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.perm-prompt {
+  color: var(--ok);
+}
+
+.diff-add {
+  color: #8ff0b6;
+}
+
+.diff-del {
+  color: #ff9d9d;
+}
+
+.perm-path {
+  display: inline-block;
+  margin: 0 0 8px;
+  padding: 2px 7px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.07);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  word-break: break-all;
+}
+
+.perm-reason {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.perm-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.perm-buttons .btn {
+  height: 32px;
+  font-size: 12.5px;
+}
+
+.perm-status {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.perm-allowed .perm-status,
+.perm-allowedAlways .perm-status,
+.question-answered .perm-status {
+  color: #a6ecc6;
+}
+
+.perm-denied .perm-status {
+  color: #ffb3b3;
+}
+
+.question {
+  margin: 10px 0 4px;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.question legend {
+  padding: 0;
+  margin-bottom: 6px;
+  font-weight: 600;
+  font-size: 13.5px;
+}
+
+.question-chip {
+  display: table;
+  margin-bottom: 4px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 10.5px;
+  color: var(--text-dim);
+}
+
+.question-options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.question-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong);
+  background: rgba(0, 0, 0, 0.2);
+  text-align: left;
+  cursor: pointer;
+}
+
+.question-option strong {
+  display: block;
+  font-size: 13px;
+}
+
+.question-option small {
+  display: block;
+  color: var(--text-dim);
+  font-size: 12px;
+}
+
+.question-option.active {
+  border-color: var(--accent);
+  background: rgba(255, 180, 84, 0.12);
+}
+
+.question-option:disabled {
+  cursor: default;
+}
+
+.radio,
+.check-box {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  margin-top: 2px;
+  border: 2px solid var(--text-faint);
+  border-radius: 50%;
+}
+
+.check-box {
+  border-radius: 4px;
+}
+
+.question-option.active .radio,
+.question-option.active .check-box {
+  border-color: var(--accent);
+  background: radial-gradient(circle, var(--accent) 45%, transparent 50%);
+}
+
+.question-option.active .check-box {
+  background: var(--accent);
+}
+
+.question-other {
+  width: 100%;
+  margin-top: 6px;
+  height: 34px;
+  font-size: 13px;
+}
+
+/* ------------------------------------------------------ chat tools/hud -- */
+
+.chat-tools {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.chat-tools .btn {
+  position: relative;
+}
+
+.chat-tools .btn.active {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.tool-count {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 9.5px;
+  font-weight: 800;
+  line-height: 14px;
+}
+
+.chat-drawer {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 13px;
+  animation: fade-in 0.12s ease;
+}
+
+.chat-drawer h4 {
+  margin: 0 0 8px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-faint);
+}
+
+.chat-drawer p {
+  margin: 0 0 8px;
+}
+
+.chat-drawer-danger {
+  background: rgba(255, 107, 107, 0.07);
+}
+
+.rule-list {
+  margin: 0 0 8px;
+  padding: 0;
+  list-style: none;
+}
+
+.rule-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 3px 0;
+}
+
+.rule-list code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  word-break: break-all;
+}
+
+.drawer-hint {
+  font-size: 11.5px;
+  color: var(--text-faint);
+}
+
+.hud-alerts {
+  position: absolute;
+  top: 60px;
+  left: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-width: calc(100% - 520px);
+  z-index: 11;
+}
+
+.hud-alert {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 11px 4px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  background: rgba(19, 21, 30, 0.88);
+  color: var(--text);
+  font-size: 12px;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+  animation: pop-in 0.16s ease;
+}
+
+.hud-alert span:last-child {
+  color: var(--text-dim);
+}
+
+.hud-alert-attention {
+  border-color: rgba(255, 209, 102, 0.6);
+}
+
+.hud-alert-attention .status-dot {
+  background: var(--warn);
+  animation: pulse 0.6s ease-in-out infinite;
+}
+
+.hud-alert-error {
+  border-color: rgba(255, 107, 107, 0.6);
+}
+
+.hud-alert-error .status-dot {
+  background: var(--danger);
+}
+
+.hud-alert-unread .status-dot {
+  background: var(--ok);
+}

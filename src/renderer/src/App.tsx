@@ -5,6 +5,7 @@ import { gameBridge } from './game/bridge'
 import { GameCanvas } from './game/GameCanvas'
 import { useAppStore } from './state/store'
 import { Hud } from './ui/Hud'
+import { HudAlerts } from './ui/HudAlerts'
 import { NewAgentDialog } from './ui/NewAgentDialog'
 import { Onboarding } from './ui/Onboarding'
 import { SettingsDialog } from './ui/SettingsDialog'
@@ -18,7 +19,8 @@ function useBootstrap(): boolean {
     const offs = [
       api.on('agents:changed', (agents) => useAppStore.getState().setAgents(agents)),
       api.on('chat:event', (event) => useAppStore.getState().applyChatEvent(event)),
-      api.on('key:changed', (status) => useAppStore.getState().setKeyStatus(status))
+      api.on('key:changed', (status) => useAppStore.getState().setKeyStatus(status)),
+      api.on('ui:openAgent', (agentId) => useAppStore.getState().openChat(agentId))
     ]
 
     void Promise.all([
@@ -64,6 +66,7 @@ export function App(): React.JSX.Element {
     <div className="app">
       {ready && <GameCanvas />}
       <Hud />
+      <HudAlerts />
       {openAgent && <ChatPanel key={openAgent.id} agent={openAgent} />}
       {modal === 'newAgent' && <NewAgentDialog />}
       {modal === 'settings' && <SettingsDialog />}

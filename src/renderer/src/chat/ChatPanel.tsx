@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { AgentView, ChatItem } from '@shared/types'
 import { api } from '../api'
 import { useT } from '../i18n'
@@ -20,6 +20,23 @@ export function ChatPanel({ agent }: { agent: AgentView }): React.JSX.Element {
   const items = useAppStore((s) => s.chats[agent.id] ?? EMPTY)
   const scrollRef = useRef<HTMLDivElement>(null)
   const stickToBottom = useRef(true)
+  const [drawer, setDrawer] = useState<'none' | 'rules' | 'remove'>('none')
+  const toast = useAppStore((s) => s.toast)
+  const toggle = (next: 'rules' | 'remove'): void => setDrawer((current) => (current === next ? 'none' : next))
+
+  const removeAgent = async (): Promise<void> => {
+    await api.invoke('agents:remove', agent.id)
+    toast(t('chat.removed', { name: agent.name }))
+    closeChat()
+  }
+
+  const removeRule = (rule: string): void => {
+    void api.invoke(
+      'agents:setAllowRules',
+      agent.id,
+      agent.allowRules.filter((r) => r !== rule)
+    )
+  }
 
   useEffect(() => {
     if (loaded) return
@@ -70,10 +87,64 @@ export function ChatPanel({ agent }: { agent: AgentView }): React.JSX.Element {
             </span>
           )}
         </div>
-        <button className="btn btn-icon btn-ghost" onClick={closeChat} aria-label={t('common.close')}>
-          <Icon name="close" />
-        </button>
+        <div className="chat-tools">
+          <button
+            className={`btn btn-icon btn-ghost${drawer === 'rules' ? ' active' : ''}`}
+            onClick={() => toggle('rules')}
+            title={t('rules.title')}
+            aria-label={t('rules.title')}
+          >
+            <Icon name="shield" />
+            {agent.allowRules.length > 0 && <span className="tool-count">{agent.allowRules.length}</span>}
+          </button>
+          <button
+            className={`btn btn-icon btn-ghost${drawer === 'remove' ? ' active' : ''}`}
+            onClick={() => toggle('remove')}
+            title={t('chat.remove')}
+            aria-label={t('chat.remove')}
+          >
+            <Icon name="trash" />
+          </button>
+          <button className="btn btn-icon btn-ghost" onClick={closeChat} aria-label={t('common.close')}>
+            <Icon name="close" />
+          </button>
+        </div>
       </header>
+
+      {drawer === 'rules' && (
+        <div className="chat-drawer">
+          <h4>{t('rules.title')}</h4>
+          {agent.allowRules.length === 0 ? (
+            <p className="muted">{t('rules.empty')}</p>
+          ) : (
+            <ul className="rule-list">
+              {agent.allowRules.map((rule) => (
+                <li key={rule}>
+                  <code>{rule}</code>
+                  <button className="btn btn-icon btn-ghost btn-small" onClick={() => removeRule(rule)} aria-label={t('common.delete')}>
+                    <Icon name="close" size={13} />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          <p className="drawer-hint">{t('rules.hint')}</p>
+        </div>
+      )}
+
+      {drawer === 'remove' && (
+        <div className="chat-drawer chat-drawer-danger">
+          <p>{t('chat.removeConfirm', { name: agent.name })}</p>
+          <div className="settings-actions">
+            <button className="btn btn-small btn-ghost" onClick={() => setDrawer('none')}>
+              {t('common.cancel')}
+            </button>
+            <button className="btn btn-small btn-danger" data-action="remove-agent" onClick={() => void removeAgent()}>
+              {t('common.delete')}
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="chat-scroll" ref={scrollRef} onScroll={onScroll}>
         {loaded && items.length === 0 && (

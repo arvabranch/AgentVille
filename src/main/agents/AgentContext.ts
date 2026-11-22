@@ -74,9 +74,18 @@ export class AgentContext {
     this.deps.agents.update(this.agentId, patch)
   }
 
+  /** Marks any message still "typing" as complete (after a stop, crash or result). */
+  endStreaming(): void {
+    if (!this.alive) return
+    for (const item of this.deps.chat.get(this.agentId)) {
+      if (item.kind === 'assistant' && item.streaming) this.update({ ...item, streaming: false })
+    }
+  }
+
   /** Closes a turn: shows the usage line, records spend and updates the status. */
   finishTurn(usage: ChatUsage, sessionCostUsd: number, outcome: TurnOutcome): void {
     if (!this.alive) return
+    this.endStreaming()
     if (outcome.errorText) this.error(outcome.errorText, outcome.errorCode)
     const spent = usage.costUsd > 0 || usage.inputTokens + usage.outputTokens > 0
     if (spent) this.append({ kind: 'result', usage, isError: outcome.isError })

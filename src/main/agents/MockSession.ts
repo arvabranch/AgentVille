@@ -34,7 +34,7 @@ export function greet(name: string): string {
 | Leer el proyecto | ✅ |
 | Ejecutar pruebas | ⏳ |
 
-Escribe un mensaje con la palabra **test** para que pida permiso antes de ejecutar un comando.`
+Escribe un mensaje con la palabra **test** para que pida permiso antes de ejecutar un comando, o con **pregunta** para que te haga preguntas.`
 
 /**
  * Dev-only stand-in for the Agent SDK: streams a canned Markdown reply, shows
@@ -86,9 +86,43 @@ export class MockSession implements AgentSession {
         }
       }
 
+      let answers = ''
+      if (/pregunta|question/i.test(text)) {
+        const decision = await this.permissions.request(
+          this.ctx,
+          'AskUserQuestion',
+          {
+            questions: [
+              {
+                question: '¿Qué framework de pruebas prefieres?',
+                header: 'Pruebas',
+                multiSelect: false,
+                options: [
+                  { label: 'Vitest', description: 'Rápido y compatible con Vite' },
+                  { label: 'Jest', description: 'El clásico' }
+                ]
+              },
+              {
+                question: '¿Qué quieres que cubra primero?',
+                header: 'Alcance',
+                multiSelect: true,
+                options: [
+                  { label: 'Unitarias', description: 'Funciones puras' },
+                  { label: 'Integración', description: 'IPC y almacenamiento' }
+                ]
+              }
+            ]
+          },
+          { signal: abort.signal, toolUseID: `mock-q-${turn}`, requestId: `mock-q-${turn}` }
+        )
+        const given = decision?.behavior === 'allow' ? (decision.updatedInput?.['answers'] as Record<string, string> | undefined) : undefined
+        answers = given ? Object.entries(given).map(([q, a]) => `- ${q} → **${a}**`).join('\n') : ''
+      }
+
       const id = `mock-${turn}-reply`
       this.ctx.append({ id, kind: 'assistant', text: '', streaming: true })
-      for (const word of reply(this.ctx.agent.name, text).split(/(?<=\s)/)) {
+      const body = answers ? `Gracias, anoto tus respuestas:\n\n${answers}\n\n` + reply(this.ctx.agent.name, text) : reply(this.ctx.agent.name, text)
+      for (const word of body.split(/(?<=\s)/)) {
         await sleep(12, abort.signal)
         this.ctx.delta(id, word)
       }
@@ -107,6 +141,7 @@ export class MockSession implements AgentSession {
       if (!this.ctx.agent.sessionId) this.ctx.setSession(`mock-session-${this.ctx.agentId.slice(0, 8)}`)
     } catch {
       if (abort.signal.aborted) {
+        this.ctx.endStreaming()
         this.ctx.notice('stopped')
         this.ctx.status('sleeping')
       }
