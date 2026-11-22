@@ -1,6 +1,8 @@
-import { app, clipboard } from 'electron'
+import { app, type BrowserWindow, clipboard, dialog, shell } from 'electron'
 import { z } from 'zod'
-import type { ExternalTarget } from '@shared/types'
+import { MAX_AGENT_NAME } from '@shared/constants'
+import type { ExternalTarget, PlayerState } from '@shared/types'
+import type { AgentManager } from './agents/AgentManager'
 import { devFlags } from './env'
 import { handle } from './ipc'
 import { openExternalSafe } from './security'
@@ -15,14 +17,28 @@ export const EXTERNAL_URLS: Record<ExternalTarget, string> = {
 }
 
 const externalTarget = z.enum(['console', 'billing', 'usage', 'apiKeys', 'repo'])
+const agentId = z.string().uuid()
 
-export function registerIpcHandlers(): void {
+export interface WorldState {
+  getPlayer: () => PlayerState | null
+  savePlayer: (player: PlayerState) => void
+}
+
+export interface HandlerContext {
+  agents: AgentManager
+  world: WorldState
+  getWindow: () => BrowserWindow | null
+}
+
+export function registerIpcHandlers(ctx: HandlerContext): void {
+  /* ------------------------------------------------------------- app -- */
   handle('app:getInfo', z.tuple([]), () => ({
     name: app.getName(),
     version: app.getVersion(),
     platform: process.platform,
     mockMode: devFlags.mock,
     demoMode: devFlags.demo,
+    scenario: devFlags.demo ? (devFlags.scenario ?? null) : null,
     isPackaged: app.isPackaged
   }))
 
@@ -36,5 +52,55 @@ export function registerIpcHandlers(): void {
 
   handle('app:copyText', z.tuple([z.string().max(2_000_000)]), (text) => {
     clipboard.writeText(text)
+  })
+
+  handle('app:revealFolder', z.tuple([z.string().max(4096)]), (folder) => {
+    // Only folders that belong to an agent can be revealed.
+    if (ctx.agents.list().some((agent) => agent.folder === folder)) {
+      void shell.openPath(folder)
+    }
+  })
+
+  /* ----------------------------------------------------------- world -- */
+  handle('world:getPlayer', z.tuple([]), () => ctx.world.getPlayer())
+
+  handle(
+    'world:savePlayer',
+    z.tuple([
+      z.object({
+        x: z.number().finite().min(0).max(10_000),
+        y: z.number().finite().min(0).max(10_000),
+        facing: z.enum(['down', 'up', 'left', 'right'])
+      })
+    ]),
+    (player) => ctx.world.savePlayer(player)
+  )
+
+  /* ---------------------------------------------------------- agents -- */
+  handle('agents:list', z.tuple([]), () => ctx.agents.list())
+
+  handle('agents:pickFolder', z.tuple([]), async () => {
+    const win = ctx.getWindow()
+    const options: Electron.OpenDialogOptions = {
+      properties: ['openDirectory', 'createDirectory'],
+      buttonLabel: 'OK'
+    }
+    const result = win ? await dialog.showOpenDialog(win, options) : await dialog.showOpenDialog(options)
+    if (result.canceled) return null
+    return result.filePaths[0] ?? null
+  })
+
+  handle(
+    'agents:create',
+    z.tuple([z.object({ name: z.string().min(1).max(MAX_AGENT_NAME * 2), folder: z.string().min(1).max(4096) })]),
+    (input) => ctx.agents.create(input)
+  )
+
+  handle('agents:remove', z.tuple([agentId]), (id) => {
+    ctx.agents.remove(id)
+  })
+
+  handle('agents:markRead', z.tuple([agentId]), (id) => {
+    if (ctx.agents.has(id) && ctx.agents.get(id).unread) ctx.agents.update(id, { unread: false })
   })
 }

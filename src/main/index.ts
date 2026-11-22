@@ -1,6 +1,9 @@
 import { app, BrowserWindow } from 'electron'
 import path from 'node:path'
-import { configureDataDir, mainDir } from './env'
+import type { PlayerState } from '@shared/types'
+import { AgentManager } from './agents/AgentManager'
+import { seedDemoTown } from './demo'
+import { configureDataDir, devFlags, mainDir } from './env'
 import { setEventTarget, setTrustedUrlCheck } from './ipc'
 import { registerIpcHandlers } from './handlers'
 import { log } from './log'
@@ -19,6 +22,17 @@ if (!app.requestSingleInstanceLock()) {
 }
 
 let mainWindow: BrowserWindow | null = null
+const agents = new AgentManager()
+
+// Player position (persisted to disk in a later step).
+let player: PlayerState | null =
+  devFlags.scenario === 'office' || devFlags.scenario === 'chat' ? { x: 22 * 16, y: 15 * 16, facing: 'up' } : null
+const world = {
+  getPlayer: () => player,
+  savePlayer: (next: PlayerState) => {
+    player = next
+  }
+}
 
 function openMainWindow(): void {
   mainWindow = createMainWindow()
@@ -35,11 +49,12 @@ app.on('second-instance', () => {
   mainWindow.focus()
 })
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   hardenApp()
   handleAppProtocol(path.join(mainDir, '../renderer'))
   setTrustedUrlCheck(isTrustedUrl)
-  registerIpcHandlers()
+  registerIpcHandlers({ agents, world, getWindow: () => mainWindow })
+  if (devFlags.demo) await seedDemoTown(agents)
   openMainWindow()
 
   app.on('activate', () => {

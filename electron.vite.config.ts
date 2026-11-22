@@ -84,7 +84,9 @@ export default defineConfig({
     plugins: [react(), cspPlugin()],
     build: {
       // Phaser alone is ~1 MB minified; this is a desktop app, not a website.
-      chunkSizeWarningLimit: 2500
+      chunkSizeWarningLimit: 2500,
+      // Never inline assets as data: URIs; the production CSP only allows 'self'.
+      assetsInlineLimit: 0
     }
   }
 })

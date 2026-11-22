@@ -1,6 +1,7 @@
 import { app, BrowserWindow } from 'electron'
 import { writeFile } from 'node:fs/promises'
 import path from 'node:path'
+import { runDevScript } from './devScript'
 import { devFlags, isDev, mainDir, rendererDevUrl } from './env'
 import { log } from './log'
 import { APP_ORIGIN } from './protocol'
@@ -31,6 +32,14 @@ export function createMainWindow(): BrowserWindow {
 
   win.once('ready-to-show', () => win.show())
 
+  if (isDev) {
+    // Surface renderer warnings/errors (CSP violations, exceptions) in the terminal.
+    win.webContents.on('console-message', (event) => {
+      const { level, message } = event as unknown as { level: string; message: string }
+      if (level === 'warning' || level === 'error') log.warn(`[renderer:${level}] ${message}`)
+    })
+  }
+
   if (rendererDevUrl) {
     void win.loadURL(rendererDevUrl)
   } else {
@@ -46,6 +55,7 @@ function scheduleCapture(win: BrowserWindow, file: string): void {
   win.webContents.once('did-finish-load', () => {
     setTimeout(async () => {
       try {
+        if (devFlags.script) await runDevScript(win, devFlags.script)
         const image = await win.webContents.capturePage()
         await writeFile(file, image.toPNG())
         log.info(`Screenshot saved to ${file}`)

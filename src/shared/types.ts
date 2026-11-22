@@ -10,6 +10,8 @@ export interface AppInfo {
   mockMode: boolean
   /** True in demo mode (dev only): seeded agents, temporary data folder. */
   demoMode: boolean
+  /** Dev-only UI scenario used for screenshots (e.g. `office`, `chat`). */
+  scenario: string | null
   isPackaged: boolean
 }
 

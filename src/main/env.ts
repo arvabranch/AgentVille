@@ -28,7 +28,9 @@ export const devFlags = {
   captureDelayMs: Number(process.env['AGENTVILLE_CAPTURE_DELAY'] ?? 3500),
   captureQuit: isDev && process.env['AGENTVILLE_CAPTURE_QUIT'] === '1',
   /** Optional UI scenario applied before capturing (demo mode only). */
-  scenario: isDev ? process.env['AGENTVILLE_SCENARIO'] : undefined
+  scenario: isDev ? process.env['AGENTVILLE_SCENARIO'] : undefined,
+  /** Optional input script run before capturing (see devScript.ts). */
+  script: isDev ? process.env['AGENTVILLE_SCRIPT'] : undefined
 } as const
 
 /**
